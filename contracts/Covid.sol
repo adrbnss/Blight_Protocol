@@ -658,7 +658,7 @@ contract SARSCOV2 is
         mapping(uint256 => address) requestIdToAddy;
         mapping(address => uint256) addyToRequestId;
         mapping(address => bool) requestFullfilled; // getter
-        address[] gotLuckyVaccine; // getter
+        address[10] gotLuckyVaccine; // getter
     }
 
     // Store users vaccines through epochs
@@ -1055,12 +1055,12 @@ contract SARSCOV2 is
     }
 
     function getVaccine(address user, uint256 vaccine, bool vaccine4) internal {
-        userCurrentVaccine[user] = vaccine;
-        epochs[epochId].hasOpenedCapsule[user] = true;
-
         if (userCurrentVaccine[user] == 0) {
             userVaccineList.push(user);
         }
+        userCurrentVaccine[user] = vaccine;
+        epochs[epochId].hasOpenedCapsule[user] = true;
+
         emit CapsuleOpened(user, vaccine, vaccine4);
     }
 
@@ -1129,7 +1129,9 @@ contract SARSCOV2 is
         require(s_requests[_requestId].exists, "request not found");
         s_requests[_requestId].fulfilled = true;
         s_requests[_requestId].randomWords = _randomWords;
-        epochs[epochId].requestFullfilled[epochs[epochId].requestIdToAddy[_requestId]] = true; // Associate the request to the user addy, and write it as fullfilled - useful for the front
+        epochs[epochId].requestFullfilled[
+            epochs[epochId].requestIdToAddy[_requestId]
+        ] = true; // Associate the request to the user addy, and write it as fullfilled - useful for the front
         emit RequestFulfilled(_requestId, _randomWords);
     }
 
