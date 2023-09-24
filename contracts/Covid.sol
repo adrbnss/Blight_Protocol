@@ -655,7 +655,9 @@ contract SARSCOV2 is
         mapping(address => bool) isBuyer; // getter
         mapping(address => bool) hasUpgrade; // getter
         mapping(address => bool) hasOpenedCapsule; // getter
-        mapping(address => uint256) requestId;
+        mapping(uint256 => address) requestIdToAddy;
+        mapping(address => uint256) addyToRequestId;
+        mapping(address => bool) requestFullfilled; // getter
         address[] gotLuckyVaccine; // getter
     }
 
@@ -1012,15 +1014,17 @@ contract SARSCOV2 is
             _capsulePrice - _amountToBurn
         );
 
-        epochs[epochId].requestId[msg.sender] = requestRandomWords();
+        uint256 _requestId = requestRandomWords();
+        epochs[epochId].requestIdToAddy[_requestId] = msg.sender;
+        epochs[epochId].addyToRequestId[msg.sender] = _requestId;
 
-        emit CapsuleBought(msg.sender, epochs[epochId].requestId[msg.sender]);
+        emit CapsuleBought(msg.sender, _requestId);
     }
 
     function openCapsule(address user) external {
         require(user == msg.sender, "Not authorized");
         require(
-            epochs[epochId].requestId[msg.sender] != 0,
+            epochs[epochId].addyToRequestId[msg.sender] != 0,
             "You haven't bought a capsule during this epoch"
         );
         require(
@@ -1028,7 +1032,7 @@ contract SARSCOV2 is
             "You've already opened your capsule"
         );
         uint256 randomResult = getRequestStatus(
-            epochs[epochId].requestId[msg.sender]
+            epochs[epochId].addyToRequestId[msg.sender]
         );
         if (randomResult >= 1 && randomResult <= 40) {
             vaccineOneCount++;
@@ -1125,6 +1129,7 @@ contract SARSCOV2 is
         require(s_requests[_requestId].exists, "request not found");
         s_requests[_requestId].fulfilled = true;
         s_requests[_requestId].randomWords = _randomWords;
+        epochs[epochId].requestFullfilled[epochs[epochId].requestIdToAddy[_requestId]] = true; // Associate the request to the user addy, and write it as fullfilled - useful for the front
         emit RequestFulfilled(_requestId, _randomWords);
     }
 
@@ -1359,6 +1364,10 @@ contract SARSCOV2 is
 
     function getHasOpenedCapsule(address user) external view returns (bool) {
         return epochs[epochId].hasOpenedCapsule[user];
+    }
+
+    function getRequestFullfilled(address user) external view returns (bool) {
+        return epochs[epochId].requestFullfilled[user];
     }
 
     function getGotLuckyVaccine() external view returns (address[] memory) {
