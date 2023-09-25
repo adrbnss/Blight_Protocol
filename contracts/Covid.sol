@@ -643,9 +643,6 @@ contract SARSCOV2 is
     // Rewards pool
     RewardPool public rewardPool;
 
-    // Pool contract
-    address public poolContract;
-
     // Epoch struct
     struct Epoch {
         uint256 id;
@@ -1031,6 +1028,10 @@ contract SARSCOV2 is
             epochs[epochId].hasOpenedCapsule[msg.sender] == false,
             "You've already opened your capsule"
         );
+        require(
+            epochs[epochId].requestFullfilled[msg.sender] == true,
+            "Your request hasn't been fullfilled yet"
+        );
         uint256 randomResult = getRequestStatus(
             epochs[epochId].addyToRequestId[msg.sender]
         );
@@ -1076,7 +1077,8 @@ contract SARSCOV2 is
             "You've already upgraded your vaccine during this epoch"
         );
         require(
-            userCurrentVaccine[msg.sender] > 0,
+            userCurrentVaccine[msg.sender] > 0 &&
+                userCurrentVaccine[msg.sender] < 3,
             "You don't have a vaccine to upgrade"
         );
         require(
@@ -1129,7 +1131,9 @@ contract SARSCOV2 is
         require(s_requests[_requestId].exists, "request not found");
         s_requests[_requestId].fulfilled = true;
         s_requests[_requestId].randomWords = _randomWords;
-        epochs[epochId].requestFullfilled[epochs[epochId].requestIdToAddy[_requestId]] = true; // Associate the request to the user addy, and write it as fullfilled - useful for the front
+        epochs[epochId].requestFullfilled[
+            epochs[epochId].requestIdToAddy[_requestId]
+        ] = true; // Associate the request to the user addy, and write it as fullfilled - useful for the front
         emit RequestFulfilled(_requestId, _randomWords);
     }
 
