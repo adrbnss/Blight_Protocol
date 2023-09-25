@@ -1039,6 +1039,11 @@ contract SARSCOV2 is
             epochs[epochId].hasOpenedCapsule[msg.sender] == false,
             "You've already opened your capsule"
         );
+        require(
+            epochs[epochId].requestFullfilled[msg.sender] == true,
+            "Your request is not fullfilled yet"
+        );
+        
         uint256 randomResult = getRequestStatus(
             epochs[epochId].addyToRequestId[msg.sender]
         );
