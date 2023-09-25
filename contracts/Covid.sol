@@ -988,6 +988,10 @@ contract SARSCOV2 is
             "Not enough tokens to buy a capsule"
         );
         require(
+            epochs[epochId].endTime > block.timestamp,
+            "Epoch is over, wait for the next one"
+        );
+        require(
             !epochs[epochId].isBuyer[msg.sender],
             "You've already bought a capsule during this epoch"
         );
@@ -1023,6 +1027,10 @@ contract SARSCOV2 is
 
     function openCapsule(address user) external {
         require(user == msg.sender, "Not authorized");
+        require(
+            epochs[epochId].endTime < block.timestamp,
+            "Epoch is not over, wait for the next one"
+        );
         require(
             epochs[epochId].addyToRequestId[msg.sender] != 0,
             "You haven't bought a capsule during this epoch"
@@ -1082,6 +1090,10 @@ contract SARSCOV2 is
         require(
             balanceOf(msg.sender) >= _capsulePrice,
             "Not enough tokens to upgrade your vaccine"
+        );
+        require(
+            epochs[epochId].endTime > block.timestamp,
+            "Epoch is over, wait for the next one"
         );
 
         epochs[epochId].hasUpgrade[msg.sender] = true;
