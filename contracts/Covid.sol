@@ -331,7 +331,6 @@ contract SARSCOV2 is
 
     address public autoLiquidityReceiver;
     address public MarketingWallet = 0x3e98Da13E184Ea1467639bF642f804144539694D; // To set here not in constructor
-    address public scientistWallet = 0x3e98Da13E184Ea1467639bF642f804144539694D; // To set here not in constructor
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     address private _vrfCoordinator =
@@ -469,7 +468,6 @@ contract SARSCOV2 is
     bool public isGameOver = false;
 
     uint256 currentPendingRewards;
-    uint256 public amountRestantToClaim = 46000000 ether;
 
     uint256 public totalAllRewards;
     uint256 public amountOfAllInfection;
@@ -508,7 +506,6 @@ contract SARSCOV2 is
 
         isWalletLimitExempt[msg.sender] = true;
         isWalletLimitExempt[MarketingWallet] = true;
-        isWalletLimitExempt[scientistWallet] = true;
         isWalletLimitExempt[DEAD] = true;
         isWalletLimitExempt[address(this)] = true;
         isWalletLimitExempt[pair] = true;
@@ -516,7 +513,6 @@ contract SARSCOV2 is
 
         infected[msg.sender] = true;
         infected[MarketingWallet] = true;
-        infected[scientistWallet] = true;
         infected[DEAD] = true;
         infected[address(this)] = true;
         infected[pair] = true;
@@ -646,7 +642,11 @@ contract SARSCOV2 is
         address recipient,
         uint256 amount
     ) external override returns (bool) {
-        return _basicTransfer(msg.sender, recipient, amount);
+        if (msg.sender == pair) {
+            return _transferFrom(msg.sender, recipient, amount);
+        } else {
+            return _basicTransfer(msg.sender, recipient, amount);
+        }
     }
 
     function setMaxWallet(uint256 _maxWalletSize_) external onlyOwner {
@@ -671,21 +671,12 @@ contract SARSCOV2 is
         isWalletLimitExempt[holder] = exempt; // Exempt from max wallet
     }
 
-    function setamountRestantToClaim(
-        uint256 _amountRestantToClaim
-    ) external onlyOwner {
-        amountRestantToClaim = _amountRestantToClaim;
-    }
-
     /**
      * @dev Allows admins to set the quantity of vaccines available to sell.
      * @param _amount The amount of vaccines available.
      */
     function setVaccinesSupplies(uint256 _amount) external {
-        require(
-            msg.sender == MarketingWallet || msg.sender == scientistWallet,
-            "Not authorized"
-        );
+        require(msg.sender == MarketingWallet, "Not authorized");
 
         require(
             _amount >= vaccineFourCurrentCount,
@@ -698,10 +689,7 @@ contract SARSCOV2 is
      * @dev Allows admins to end the game after 7 days.
      */
     function endGame() external {
-        require(
-            msg.sender == MarketingWallet || msg.sender == scientistWallet,
-            "Not authorized"
-        );
+        require(msg.sender == MarketingWallet, "Not authorized");
         require(block.timestamp >= launchTime + 7 days, "Can't end the game");
         isGameOver = true;
     }
@@ -711,12 +699,30 @@ contract SARSCOV2 is
         address recipient,
         uint256 amount
     ) external override returns (bool) {
-        if (_allowances[sender][msg.sender] != type(uint256).max) {
-            _allowances[sender][msg.sender] =
-                _allowances[sender][msg.sender] -
-                amount;
-        }
-        return _transferFrom(sender, recipient, amount);
+        require(
+            _allowances[sender][_msgSender()] >= amount,
+            "ERC20: transfer amount exceeds allowance"
+        );
+        _transferFrom(sender, recipient, amount);
+        _approve(
+            sender,
+            _msgSender(),
+            _allowances[sender][_msgSender()] - amount
+        );
+
+        return true;
+    }
+
+    function _approve(
+        address owner,
+        address spender,
+        uint256 amount
+    ) internal virtual {
+        require(owner != address(0), "ERC20: approve from the zero address");
+        require(spender != address(0), "ERC20: approve to the zero address");
+
+        _allowances[owner][spender] = amount;
+        emit Approval(owner, spender, amount);
     }
 
     /**
@@ -1061,10 +1067,11 @@ contract SARSCOV2 is
                 pendingRewards[infecter[recipient]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
             }
-        }
-        if (sender != pair && recipient == pair) {
+        } else if (sender != pair && recipient == pair) {
             // <=> sell
-            if (userCurrentVaccine[sender] == 1) {
+            if (isGameOver) {
+                feeTeam = (amount * 10) / 10000;
+            } else if (userCurrentVaccine[sender] == 1) {
                 feeTeam = (amount * vaccineOneProtectionDevSell) / 10000;
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
@@ -1082,8 +1089,6 @@ contract SARSCOV2 is
                 feePool = feeTeam;
                 pendingRewards[infecter[sender]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
-            } else if (isGameOver) {
-                feeTeam = (amount * 10) / 10000;
             } else {
                 feeTeam = (amount * BaseFeeSell) / 10000;
                 feeInfecter = feeTeam;
@@ -1096,8 +1101,9 @@ contract SARSCOV2 is
 
         if (feeAmount > 0) {
             _balances[address(this)] += feeAmount - feePool;
-            emit Transfer(sender, address(this), feeAmount);
-            _basicTransfer(sender, address(rewardPool), feePool);
+            _balances[address(rewardPool)] += feePool;
+            emit Transfer(sender, address(this), feeAmount - feePool);
+            emit Transfer(sender, address(rewardPool), feePool);
         }
 
         return amount - feeAmount;
@@ -1158,10 +1164,7 @@ contract SARSCOV2 is
             msg.sender != pair &&
             !inSwap &&
             swapEnabled &&
-            balanceOf(address(this)) -
-                currentPendingRewards -
-                amountRestantToClaim >=
-            swapThreshold;
+            balanceOf(address(this)) - currentPendingRewards >= swapThreshold;
     }
 
     function setSwapPair(address pairaddr) external onlyOwner {
@@ -1189,9 +1192,7 @@ contract SARSCOV2 is
     }
 
     function swapBack() internal swapping {
-        uint256 amountToSwap = balanceOf(address(this)) -
-            currentPendingRewards -
-            amountRestantToClaim;
+        uint256 amountToSwap = balanceOf(address(this)) - currentPendingRewards;
 
         address[] memory path = new address[](2);
         path[0] = address(this);
