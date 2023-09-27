@@ -312,7 +312,7 @@ contract SARSCOV2 is
     uint8 constant _decimals = 18;
     uint256 _totalSupply = 100000000 * 10 ** _decimals;
 
-    uint256 public _maxWalletSize = (_totalSupply * 30) / 1000; // 3%
+    uint256 public _maxWalletSize = (_totalSupply * 10) / 1000; // 3%
 
     mapping(address => uint256) _balances;
     mapping(address => mapping(address => uint256)) _allowances;
@@ -444,14 +444,14 @@ contract SARSCOV2 is
     uint256 public vaccineFourSupply = 10;
 
     // Vaccines reductions fees on buys
-    uint256 private vaccineOneProtectionDevBuy;
-    uint256 private vaccineTwoProtectionDevBuy;
-    uint256 private vaccineThreeProtectionDevBuy;
+    uint256 public vaccineOneProtectionDevBuy;
+    uint256 public vaccineTwoProtectionDevBuy;
+    uint256 public vaccineThreeProtectionDevBuy;
 
     // Vaccines reductions fees on sells
-    uint256 private vaccineOneProtectionDevSell;
-    uint256 private vaccineTwoProtectionDevSell;
-    uint256 private vaccineThreeProtectionDevSell;
+    uint256 public vaccineOneProtectionDevSell;
+    uint256 public vaccineTwoProtectionDevSell;
+    uint256 public vaccineThreeProtectionDevSell;
 
     // Reduction rate for vaccines on buys
     uint256 internal immutable vaccineOneReductionRateBuy = 229; // Tier 1 vaccine aka the less effective
@@ -527,28 +527,28 @@ contract SARSCOV2 is
         // Upgrade buy fees
         vaccineOneProtectionDevBuy =
             BaseFeeBuy -
-            sqrt((vaccineOneReductionRateBuy / 100) * epochId);
+            sqrt((vaccineOneReductionRateBuy * 100) * epochId);
 
         vaccineTwoProtectionDevBuy =
             BaseFeeBuy -
-            sqrt((vaccineTwoReductionRateBuy / 100) * epochId);
+            sqrt((vaccineTwoReductionRateBuy * 100) * epochId);
 
         vaccineThreeProtectionDevBuy =
             BaseFeeBuy -
-            sqrt((vaccineThreeReductionRateBuy / 100) * epochId);
+            sqrt((vaccineThreeReductionRateBuy * 100) * epochId);
 
         // Upgrade sell fees
         vaccineOneProtectionDevSell =
             BaseFeeSell -
-            sqrt((vaccineOneReductionRateSell / 100) * epochId);
+            sqrt((vaccineOneReductionRateSell * 100) * epochId);
 
         vaccineTwoProtectionDevSell =
             BaseFeeSell -
-            sqrt((vaccineTwoReductionRateSell / 100) * epochId);
+            sqrt((vaccineTwoReductionRateSell * 100) * epochId);
 
         vaccineThreeProtectionDevSell =
             BaseFeeSell -
-            sqrt((vaccineThreeReductionRateSell / 100) * epochId);
+            sqrt((vaccineThreeReductionRateSell * 100) * epochId);
     }
 
     function _startNewEpoch() internal {
@@ -1114,10 +1114,16 @@ contract SARSCOV2 is
         require(pendingRewards[msg.sender] > 0, "no pending rewards");
 
         uint256 _pendingRewards = pendingRewards[msg.sender];
+        uint256 _rewardsToPool = 0;
         pendingRewards[msg.sender] = 0;
 
         if (block.timestamp < launchTime + 1 days) {
-            _pendingRewards = (_pendingRewards * 70) / 100;
+            _rewardsToPool = (_pendingRewards * 25) / 100;
+            _pendingRewards = _pendingRewards - _rewardsToPool;
+        }
+
+        if (_rewardsToPool > 0) {
+            _basicTransfer(address(this), address(rewardPool), _rewardsToPool);
         }
 
         bool temp;
