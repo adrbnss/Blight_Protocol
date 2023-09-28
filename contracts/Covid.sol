@@ -298,6 +298,8 @@ abstract contract VRFConsumerBaseV2 {
 
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./RewardPool.sol";
 
 contract SARSCOV2 is
@@ -307,12 +309,14 @@ contract SARSCOV2 is
     ReentrancyGuard,
     AccessControl
 {
+    using SafeMath for uint256;
     string private _name = "SARS-COV-2";
     string private _symbol = "COVID";
     uint8 constant _decimals = 18;
     uint256 _totalSupply = 100000000 * 10 ** _decimals;
+    uint256 internal _decimalHelper = 1e24;
 
-    uint256 public _maxWalletSize = (_totalSupply * 10) / 1000; // 3%
+    uint256 public _maxWalletSize = (_totalSupply * 10) / 1000; // 1%
 
     mapping(address => uint256) _balances;
     mapping(address => mapping(address => uint256)) _allowances;
@@ -320,12 +324,12 @@ contract SARSCOV2 is
     mapping(address => bool) isWalletLimitExempt;
 
     // Buy fees
-    uint256 private BaseFeeBuy = 200;
-    uint256 public TotalBuyFee = 600;
+    uint256 private BaseFeeBuy = 600 * _decimalHelper;
+    uint256 private UnitFeeBuy = 200;
 
     // Sell fees
-    uint256 private BaseFeeSell = 300;
-    uint256 public TotalSellFee = 900;
+    uint256 private BaseFeeSell = 900 * _decimalHelper;
+    uint256 private UnitFeeSell = 300;
 
     address private constant DEAD = 0x000000000000000000000000000000000000dEaD;
 
@@ -444,24 +448,24 @@ contract SARSCOV2 is
     uint256 public vaccineFourSupply = 10;
 
     // Vaccines reductions fees on buys
-    uint256 public vaccineOneProtectionDevBuy;
-    uint256 public vaccineTwoProtectionDevBuy;
-    uint256 public vaccineThreeProtectionDevBuy;
+    uint256 internal vaccineOneProtectionDevBuy;
+    uint256 internal vaccineTwoProtectionDevBuy;
+    uint256 internal vaccineThreeProtectionDevBuy;
 
     // Vaccines reductions fees on sells
-    uint256 public vaccineOneProtectionDevSell;
-    uint256 public vaccineTwoProtectionDevSell;
-    uint256 public vaccineThreeProtectionDevSell;
+    uint256 internal vaccineOneProtectionDevSell;
+    uint256 internal vaccineTwoProtectionDevSell;
+    uint256 internal vaccineThreeProtectionDevSell;
 
     // Reduction rate for vaccines on buys
-    uint256 internal immutable vaccineOneReductionRateBuy = 229; // Tier 1 vaccine aka the less effective
-    uint256 internal immutable vaccineTwoReductionRateBuy = 357;
-    uint256 internal immutable vaccineThreeReductionRateBuy = 514; // Tier 3 vaccine aka the most effective
+    uint256 internal vaccineOneReductionRateBuy = 229 * _decimalHelper; // Tier 1 vaccine aka the less effective
+    uint256 internal vaccineTwoReductionRateBuy = 357 * _decimalHelper;
+    uint256 internal vaccineThreeReductionRateBuy = 514 * _decimalHelper; // Tier 3 vaccine aka the most effective
 
     // Reduction rate for vaccines on sells
-    uint256 internal immutable vaccineOneReductionRateSell = 700; // Tier 1 vaccine aka the less effective
-    uint256 internal immutable vaccineTwoReductionRateSell = 914;
-    uint256 internal immutable vaccineThreeReductionRateSell = 1157; // Tier 3 vaccine aka the most effective
+    uint256 internal vaccineOneReductionRateSell = 700 * _decimalHelper; // Tier 1 vaccine aka the less effective
+    uint256 internal vaccineTwoReductionRateSell = 914 * _decimalHelper;
+    uint256 internal vaccineThreeReductionRateSell = 1157 * _decimalHelper; // Tier 3 vaccine aka the most effective
 
     // Handle game start and end
     bool public isGameStarted = false;
@@ -526,29 +530,30 @@ contract SARSCOV2 is
     function _upgradeVaccineProtection() internal {
         // Upgrade buy fees
         vaccineOneProtectionDevBuy =
-            BaseFeeBuy -
-            sqrt((vaccineOneReductionRateBuy * 100) * epochId);
+            (BaseFeeBuy -
+            Math.sqrt(vaccineOneReductionRateBuy * epochId * 100 * _decimalHelper)).div(_decimalHelper);
 
         vaccineTwoProtectionDevBuy =
-            BaseFeeBuy -
-            sqrt((vaccineTwoReductionRateBuy * 100) * epochId);
+            (BaseFeeBuy -
+            Math.sqrt(vaccineTwoReductionRateBuy * epochId * 100 * _decimalHelper)).div(_decimalHelper);
 
         vaccineThreeProtectionDevBuy =
-            BaseFeeBuy -
-            sqrt((vaccineThreeReductionRateBuy * 100) * epochId);
+            (BaseFeeBuy -
+            Math.sqrt(vaccineThreeReductionRateBuy * epochId * 100 * _decimalHelper)).div(_decimalHelper);
 
         // Upgrade sell fees
         vaccineOneProtectionDevSell =
-            BaseFeeSell -
-            sqrt((vaccineOneReductionRateSell * 100) * epochId);
+            (BaseFeeSell -
+            Math.sqrt(vaccineOneReductionRateSell * epochId * 100 * _decimalHelper)).div(_decimalHelper);
 
         vaccineTwoProtectionDevSell =
-            BaseFeeSell -
-            sqrt((vaccineTwoReductionRateSell * 100) * epochId);
+            (BaseFeeSell -
+            Math.sqrt(vaccineTwoReductionRateSell * epochId * 100 * _decimalHelper)).div(_decimalHelper);
 
         vaccineThreeProtectionDevSell =
-            BaseFeeSell -
-            sqrt((vaccineThreeReductionRateSell * 100) * epochId);
+            (BaseFeeSell -
+            Math.sqrt(vaccineThreeReductionRateSell * epochId * 100 * _decimalHelper)).div(_decimalHelper);
+
     }
 
     function _startNewEpoch() internal {
@@ -1043,25 +1048,25 @@ contract SARSCOV2 is
             if (isGameOver) {
                 feeTeam = (amount * 9900) / 10000;
             } else if (userCurrentVaccine[recipient] == 1) {
-                feeTeam = (amount * vaccineOneProtectionDevBuy) / 10000;
+                feeTeam = ((amount * vaccineOneProtectionDevBuy) / 10000).div(3);
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[recipient]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
             } else if (userCurrentVaccine[recipient] == 2) {
-                feeTeam = (amount * vaccineTwoProtectionDevBuy) / 10000;
+                feeTeam = ((amount * vaccineTwoProtectionDevBuy) / 10000).div(3);
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[recipient]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
             } else if (userCurrentVaccine[recipient] == 3) {
-                feeTeam = (amount * vaccineThreeProtectionDevBuy) / 10000;
+                feeTeam = ((amount * vaccineThreeProtectionDevBuy) / 10000).div(3);
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[recipient]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
             } else {
-                feeTeam = (amount * BaseFeeBuy) / 10000;
+                feeTeam = (amount * UnitFeeBuy) / 10000;
                 feePool = feeTeam;
                 feeInfecter = feeTeam;
                 pendingRewards[infecter[recipient]] += feeInfecter;
@@ -1072,25 +1077,25 @@ contract SARSCOV2 is
             if (isGameOver) {
                 feeTeam = (amount * 10) / 10000;
             } else if (userCurrentVaccine[sender] == 1) {
-                feeTeam = (amount * vaccineOneProtectionDevSell) / 10000;
+                feeTeam = ((amount * vaccineOneProtectionDevSell) / 10000).div(3);
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[sender]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
             } else if (userCurrentVaccine[sender] == 2) {
-                feeTeam = (amount * vaccineTwoProtectionDevSell) / 10000;
+                feeTeam = ((amount * vaccineTwoProtectionDevSell) / 10000).div(3);
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[sender]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
             } else if (userCurrentVaccine[sender] == 3) {
-                feeTeam = (amount * vaccineThreeProtectionDevSell) / 10000;
+                feeTeam = ((amount * vaccineThreeProtectionDevSell) / 10000).div(3);
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[sender]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
             } else {
-                feeTeam = (amount * BaseFeeSell) / 10000;
+                feeTeam = (amount * UnitFeeSell) / 10000;
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[sender]] += feeInfecter;
@@ -1219,19 +1224,6 @@ contract SARSCOV2 is
                 value: amountETHDev,
                 gas: 30000
             }("");
-        }
-    }
-
-    function sqrt(uint y) internal pure returns (uint z) {
-        if (y > 3) {
-            z = y;
-            uint x = y / 2 + 1;
-            while (x < z) {
-                z = x;
-                x = (y / x + x) / 2;
-            }
-        } else if (y != 0) {
-            z = 1;
         }
     }
 }
