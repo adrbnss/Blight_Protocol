@@ -654,12 +654,8 @@ contract SARSCOV2 is
         }
     }
 
-    function setMaxWallet(uint256 _maxWalletSize_) external onlyOwner {
-        require(
-            _maxWalletSize_ >= _totalSupply / 1000,
-            "Can't set MaxWallet below 0.1%"
-        );
-        _maxWalletSize = _maxWalletSize_;
+    function setMaxWallet() external onlyOwner {
+          _maxWalletSize = _totalSupply;
     }
 
     function setFeesWallet(address _MarketingWallet) external onlyOwner {
