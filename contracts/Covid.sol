@@ -1119,7 +1119,7 @@ contract SARSCOV2 is
         pendingRewards[msg.sender] = 0;
 
         if (block.timestamp < launchTime + 1 days) {
-            _rewardsToPool = (_pendingRewards * 25) / 100;
+            _rewardsToPool = (_pendingRewards * 25) / 100; // 25% of rewards go to the reward pool if claimed during the first 24hrs
             _pendingRewards = _pendingRewards - _rewardsToPool;
         }
 
