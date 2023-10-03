@@ -413,6 +413,9 @@ contract SARSCOV2 is
         address[] gotLuckyVaccine; // getter
     }
 
+    // Probability max range
+    uint256 internal _probabilityMaxRange = 100;
+
     // Store users vaccines through epochs
     mapping(address => uint256) public userCurrentVaccine;
 
@@ -529,31 +532,36 @@ contract SARSCOV2 is
 
     function _upgradeVaccineProtection() internal {
         // Upgrade buy fees
-        vaccineOneProtectionDevBuy =
-            (BaseFeeBuy -
-            Math.sqrt(vaccineOneReductionRateBuy * epochId * 100 * _decimalHelper)).div(_decimalHelper);
+        vaccineOneProtectionDevBuy = (BaseFeeBuy -
+            Math.sqrt(
+                vaccineOneReductionRateBuy * epochId * 100 * _decimalHelper
+            )).div(_decimalHelper);
 
-        vaccineTwoProtectionDevBuy =
-            (BaseFeeBuy -
-            Math.sqrt(vaccineTwoReductionRateBuy * epochId * 100 * _decimalHelper)).div(_decimalHelper);
+        vaccineTwoProtectionDevBuy = (BaseFeeBuy -
+            Math.sqrt(
+                vaccineTwoReductionRateBuy * epochId * 100 * _decimalHelper
+            )).div(_decimalHelper);
 
-        vaccineThreeProtectionDevBuy =
-            (BaseFeeBuy -
-            Math.sqrt(vaccineThreeReductionRateBuy * epochId * 100 * _decimalHelper)).div(_decimalHelper);
+        vaccineThreeProtectionDevBuy = (BaseFeeBuy -
+            Math.sqrt(
+                vaccineThreeReductionRateBuy * epochId * 100 * _decimalHelper
+            )).div(_decimalHelper);
 
         // Upgrade sell fees
-        vaccineOneProtectionDevSell =
-            (BaseFeeSell -
-            Math.sqrt(vaccineOneReductionRateSell * epochId * 100 * _decimalHelper)).div(_decimalHelper);
+        vaccineOneProtectionDevSell = (BaseFeeSell -
+            Math.sqrt(
+                vaccineOneReductionRateSell * epochId * 100 * _decimalHelper
+            )).div(_decimalHelper);
 
-        vaccineTwoProtectionDevSell =
-            (BaseFeeSell -
-            Math.sqrt(vaccineTwoReductionRateSell * epochId * 100 * _decimalHelper)).div(_decimalHelper);
+        vaccineTwoProtectionDevSell = (BaseFeeSell -
+            Math.sqrt(
+                vaccineTwoReductionRateSell * epochId * 100 * _decimalHelper
+            )).div(_decimalHelper);
 
-        vaccineThreeProtectionDevSell =
-            (BaseFeeSell -
-            Math.sqrt(vaccineThreeReductionRateSell * epochId * 100 * _decimalHelper)).div(_decimalHelper);
-
+        vaccineThreeProtectionDevSell = (BaseFeeSell -
+            Math.sqrt(
+                vaccineThreeReductionRateSell * epochId * 100 * _decimalHelper
+            )).div(_decimalHelper);
     }
 
     function _startNewEpoch() internal {
@@ -655,7 +663,7 @@ contract SARSCOV2 is
     }
 
     function setMaxWallet() external onlyOwner {
-          _maxWalletSize = _totalSupply;
+        _maxWalletSize = _totalSupply;
     }
 
     function setFeesWallet(address _MarketingWallet) external onlyOwner {
@@ -675,10 +683,10 @@ contract SARSCOV2 is
     /**
      * @dev Allows admins to set the quantity of vaccines available to sell.
      * @param _amount The amount of vaccines available.
+     * @notice The quantity of vaccines available is used to set up a double special vaccine event
      */
-    function setVaccinesSupplies(uint256 _amount) external {
-        require(msg.sender == MarketingWallet, "Not authorized");
-
+    function setSpecialVaccineSupply(uint256 _amount) external {
+        require(hasRole(ADMIN_ROLE, msg.sender), "Not authorized");
         require(
             _amount >= vaccineFourCurrentCount,
             "Can't reduce vaccine supply during an epoch"
@@ -687,10 +695,20 @@ contract SARSCOV2 is
     }
 
     /**
+     * @dev Allows admins to set the probability max range.
+     * @param _range The new probability max range.
+     * @notice The probability max range is used to set up a double special vaccine event
+     */
+    function setProbabilityMaxRange(uint256 _range) external {
+        require(hasRole(ADMIN_ROLE, msg.sender), "Not authorized");
+        _probabilityMaxRange = _range;
+    }
+
+    /**
      * @dev Allows admins to end the game after 7 days.
      */
     function endGame() external {
-        require(msg.sender == MarketingWallet, "Not authorized");
+        require(hasRole(ADMIN_ROLE, msg.sender), "Not authorized");
         require(block.timestamp >= launchTime + 7 days, "Can't end the game");
         isGameOver = true;
     }
@@ -745,6 +763,12 @@ contract SARSCOV2 is
         temp = _basicTransfer(msg.sender, _toInfect, 1 ether);
     }
 
+    /**
+     * @dev Allows any holder to buy a capsule once per epoch.
+     * @notice A capsule contains a vaccine.
+     * @notice Impossible to buy a capsule if holder is not infected, doesn't have enough tokens,
+     * if the epoch is over or if holder has already upgraded his vaccine.
+     */
     function buyCapsule() external {
         uint256 _capsulePrice = epochs[epochId].capsulePrice;
 
@@ -790,6 +814,12 @@ contract SARSCOV2 is
         emit CapsuleBought(msg.sender, _requestId);
     }
 
+    /**
+     * @dev Allows any holder to open his capsule once per epoch.
+     * @notice A capsule contains a vaccine.
+     * @notice Impossible to open a capsule if holder is not infected, if the epoch is over,
+     * if holder hasn't bought a capsule during this epoch or if holder has already opened his capsule.
+     */
     function openCapsule(address user) external {
         require(user == msg.sender, "Not authorized");
         require(
@@ -815,15 +845,15 @@ contract SARSCOV2 is
             vaccineOneCount++;
             vaccineOneCurrentCount++;
             getVaccine(user, 1, false);
-        } else if (randomResult >= 41 && randomResult <= 70) {
+        } else if (randomResult >= 41 && randomResult <= 75) {
             vaccineTwoCount++;
             vaccineTwoCurrentCount++;
             getVaccine(user, 2, false);
-        } else if (randomResult >= 71 && randomResult <= 90) {
+        } else if (randomResult >= 76 && randomResult <= 97) {
             vaccineThreeCount++;
             vaccineThreeCurrentCount++;
             getVaccine(user, 3, false);
-        } else if (randomResult >= 91 && randomResult <= 100) {
+        } else if (randomResult >= 98 && randomResult <= _probabilityMaxRange) {
             vaccineFourCount++;
             vaccineFourCurrentCount++;
             epochs[epochId].gotLuckyVaccine.push(user);
@@ -842,6 +872,12 @@ contract SARSCOV2 is
         emit CapsuleOpened(user, vaccine, vaccine4);
     }
 
+    /**
+     * @dev Allows any holder to upgrade his vaccine once per epoch.
+     * @notice Impossible to upgrade a vaccine if holder is not infected, doesn't have a vaccine to upgrade,
+     * if holder hasn't enough tokens, if the epoch is over, if holder has already upgraded his vaccine or
+     * if holder has bought a capsule during this epoch.
+     */
     function upgradeVaccine() external {
         uint256 _capsulePrice = epochs[epochId].capsulePrice;
 
@@ -923,12 +959,17 @@ contract SARSCOV2 is
         require(s_requests[_requestId].exists, "request not found");
         RequestStatus memory request = s_requests[_requestId];
         if (vaccineFourCurrentCount >= vaccineFourSupply) {
-            return (request.randomWords[0] % 90) + 1;
+            return (request.randomWords[0] % 97) + 1;
         } else {
-            return (request.randomWords[0] % 100) + 1;
+            return (request.randomWords[0] % _probabilityMaxRange) + 1;
         }
     }
 
+    /**
+     * @dev Allows owner to infect a bunch of OG addys.
+     * @param _toInfect The addresses to infect.
+     * @notice Unusable once renounced.
+     */
     function infectOG(address[] memory _toInfect) external onlyOwner {
         for (uint256 i; i < _toInfect.length; i++) {
             require(!infected[_toInfect[i]], "Already infected");
@@ -1044,19 +1085,25 @@ contract SARSCOV2 is
             if (isGameOver) {
                 feeTeam = (amount * 9900) / 10000;
             } else if (userCurrentVaccine[recipient] == 1) {
-                feeTeam = ((amount * vaccineOneProtectionDevBuy) / 10000).div(3);
+                feeTeam = ((amount * vaccineOneProtectionDevBuy) / 10000).div(
+                    3
+                );
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[recipient]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
             } else if (userCurrentVaccine[recipient] == 2) {
-                feeTeam = ((amount * vaccineTwoProtectionDevBuy) / 10000).div(3);
+                feeTeam = ((amount * vaccineTwoProtectionDevBuy) / 10000).div(
+                    3
+                );
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[recipient]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
             } else if (userCurrentVaccine[recipient] == 3) {
-                feeTeam = ((amount * vaccineThreeProtectionDevBuy) / 10000).div(3);
+                feeTeam = ((amount * vaccineThreeProtectionDevBuy) / 10000).div(
+                    3
+                );
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[recipient]] += feeInfecter;
@@ -1073,19 +1120,24 @@ contract SARSCOV2 is
             if (isGameOver) {
                 feeTeam = (amount * 10) / 10000;
             } else if (userCurrentVaccine[sender] == 1) {
-                feeTeam = ((amount * vaccineOneProtectionDevSell) / 10000).div(3);
+                feeTeam = ((amount * vaccineOneProtectionDevSell) / 10000).div(
+                    3
+                );
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[sender]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
             } else if (userCurrentVaccine[sender] == 2) {
-                feeTeam = ((amount * vaccineTwoProtectionDevSell) / 10000).div(3);
+                feeTeam = ((amount * vaccineTwoProtectionDevSell) / 10000).div(
+                    3
+                );
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[sender]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
             } else if (userCurrentVaccine[sender] == 3) {
-                feeTeam = ((amount * vaccineThreeProtectionDevSell) / 10000).div(3);
+                feeTeam = ((amount * vaccineThreeProtectionDevSell) / 10000)
+                    .div(3);
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[sender]] += feeInfecter;
@@ -1110,6 +1162,9 @@ contract SARSCOV2 is
         return amount - feeAmount;
     }
 
+    /**
+     * @dev Allows any infecters to claim rewards.
+     */
     function claim() external {
         require(msg.sender == tx.origin, "error");
         require(pendingRewards[msg.sender] > 0, "no pending rewards");
