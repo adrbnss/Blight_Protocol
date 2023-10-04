@@ -313,7 +313,7 @@ contract SARSCOV2 is
     string private _name = "SARS-COV-2";
     string private _symbol = "COVID";
     uint8 constant _decimals = 18;
-    uint256 _totalSupply = 100000000 * 10 ** _decimals;
+    uint256 _totalSupply = 1_000_000_000 * 10 ** _decimals;
     uint256 internal _decimalHelper = 1e24;
 
     uint256 public _maxWalletSize = (_totalSupply * 10) / 1000; // 1%
@@ -403,7 +403,6 @@ contract SARSCOV2 is
         uint256 id;
         uint256 startTime;
         uint256 endTime;
-        uint256 capsulePrice;
         mapping(address => bool) isBuyer; // getter
         mapping(address => bool) hasUpgrade; // getter
         mapping(address => bool) hasOpenedCapsule; // getter
@@ -434,6 +433,9 @@ contract SARSCOV2 is
 
     // Capsule sold count
     uint256 public capsuleCount = 0;
+
+    // Capsule price
+    uint256 public capsulePrice = 200_000 ether;
 
     // Vaccine count for current round (resets every epoch)
     uint256 private vaccineOneCurrentCount = 0;
@@ -502,8 +504,6 @@ contract SARSCOV2 is
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(ADMIN_ROLE, msg.sender);
-
-        epochs[epochId].capsulePrice = 10 ether;
 
         rewardPool = new RewardPool(address(this));
 
@@ -574,9 +574,6 @@ contract SARSCOV2 is
         epochs[epochId].id = epochId;
         epochs[epochId].startTime = block.timestamp;
         epochs[epochId].endTime = block.timestamp + 23 hours;
-        epochs[epochId].capsulePrice =
-            (epochs[epochId - 1].capsulePrice * 110) /
-            100; // 10% increase every epoch
 
         vaccineOneCurrentCount = 0;
         vaccineTwoCurrentCount = 0;
@@ -770,7 +767,7 @@ contract SARSCOV2 is
      * if the epoch is over or if holder has already upgraded his vaccine.
      */
     function buyCapsule() external {
-        uint256 _capsulePrice = epochs[epochId].capsulePrice;
+        uint256 _capsulePrice = capsulePrice;
 
         require(infected[msg.sender], "You are not infected");
         require(isGameStarted, "Game has not started");
@@ -879,7 +876,7 @@ contract SARSCOV2 is
      * if holder has bought a capsule during this epoch.
      */
     function upgradeVaccine() external {
-        uint256 _capsulePrice = epochs[epochId].capsulePrice;
+        uint256 _capsulePrice = capsulePrice;
 
         require(
             epochs[epochId].isBuyer[msg.sender] == false,
