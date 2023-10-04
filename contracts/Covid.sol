@@ -435,7 +435,7 @@ contract SARSCOV2 is
     uint256 public capsuleCount = 0;
 
     // Capsule price
-    uint256 public capsulePrice = 200_000 ether;
+    uint256 public capsulePrice = 250_000 ether; // 0.025% of total supply
 
     // Vaccine count for current round (resets every epoch)
     uint256 private vaccineOneCurrentCount = 0;
