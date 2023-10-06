@@ -876,7 +876,7 @@ contract SARSCOV2 is
      * if holder has bought a capsule during this epoch.
      */
     function upgradeVaccine() external {
-        uint256 _capsulePrice = capsulePrice;
+        uint256 _upgradePrice = (capsulePrice * 750) / 1000; // 75% of capsule price
 
         require(
             epochs[epochId].isBuyer[msg.sender] == false,
@@ -892,7 +892,7 @@ contract SARSCOV2 is
             "You don't have a vaccine to upgrade"
         );
         require(
-            balanceOf(msg.sender) >= _capsulePrice,
+            balanceOf(msg.sender) >= _upgradePrice,
             "Not enough tokens to upgrade your vaccine"
         );
         require(
@@ -902,14 +902,14 @@ contract SARSCOV2 is
 
         epochs[epochId].hasUpgrade[msg.sender] = true;
 
-        uint256 _amountForDev = (_capsulePrice * 50) / 1000; // 5% for dev
+        uint256 _amountForDev = (_upgradePrice * 50) / 1000; // 5% for dev
 
         bool temp;
 
         temp = _basicTransfer(
             msg.sender,
             address(rewardPool),
-            _capsulePrice - _amountForDev
+            _upgradePrice - _amountForDev
         );
 
         _basicTransfer(msg.sender, address(this), _amountForDev);

@@ -9,6 +9,7 @@ contract RewardPool is Ownable {
     IERC20 public token;
     address public tokenAddress;
     uint256 private _maxShares = (token.totalSupply() * 25) / 1000; // 2.5% of total supply
+    uint256 public totalDistributed = 0;
 
     constructor(address _token) {
         token = IERC20(_token);
@@ -23,6 +24,7 @@ contract RewardPool is Ownable {
         uint256 balance = token.balanceOf(address(this)) > _maxShares
             ? _maxShares
             : token.balanceOf(address(this));
+        totalDistributed += balance;
         if (balance != 0) {
             for (uint256 i = 0; i < holders.length; i++) {
                 token.transfer(holders[i], balance / holders.length);
