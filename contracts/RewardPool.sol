@@ -11,7 +11,7 @@ contract RewardPool is Ownable {
     uint256 private _maxShares = (token.totalSupply() * 25) / 1000; // 2.5% of total supply
     uint256 public totalDistributed = 0;
 
-    constructor(address _token) {
+    constructor(address _token, address initialOwner) Ownable(initialOwner){
         token = IERC20(_token);
         tokenAddress = _token;
     }

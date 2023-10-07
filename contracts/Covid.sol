@@ -494,7 +494,7 @@ contract SARSCOV2 is
     event RequestSent(uint256 requestId, uint32 numWords);
     event RequestFulfilled(uint256 requestId, uint256[] randomWords);
 
-    constructor() VRFConsumerBaseV2(_vrfCoordinator) {
+    constructor(address initialOwner) VRFConsumerBaseV2(_vrfCoordinator) Ownable(initialOwner){
         router = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D); // Uniswap
         pair = IUniswapV2Factory(router.factory()).createPair(
             router.WETH(),
@@ -502,10 +502,10 @@ contract SARSCOV2 is
         );
         _allowances[address(this)][address(router)] = type(uint256).max;
 
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setupRole(ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, initialOwner);
+        _grantRole(ADMIN_ROLE, initialOwner);
 
-        rewardPool = new RewardPool(address(this));
+        rewardPool = new RewardPool(address(this), initialOwner);
 
         isFeeExempt[msg.sender] = true;
         isFeeExempt[address(this)] = true;
