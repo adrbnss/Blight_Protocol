@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
   "contractName": "IUniswapV2Router02",
-  "sourceName": "contracts/Covid.sol",
+  "sourceName": "contracts/BLI.sol",
   "abi": [
     {
       "inputs": [],

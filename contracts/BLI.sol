@@ -73,90 +73,6 @@ interface IUniswapV2Router02 {
     ) external payable returns (uint[] memory amounts);
 }
 
-// OpenZeppelin Contracts (last updated v4.9.0) (security/ReentrancyGuard.sol)
-
-pragma solidity ^0.8.20;
-
-/**
- * @dev Contract module that helps prevent reentrant calls to a function.
- *
- * Inheriting from `ReentrancyGuard` will make the {nonReentrant} modifier
- * available, which can be applied to functions to make sure there are no nested
- * (reentrant) calls to them.
- *
- * Note that because there is a single `nonReentrant` guard, functions marked as
- * `nonReentrant` may not call one another. This can be worked around by making
- * those functions `private`, and then adding `external` `nonReentrant` entry
- * points to them.
- *
- * TIP: If you would like to learn more about reentrancy and alternative ways
- * to protect against it, check out our blog post
- * https://blog.openzeppelin.com/reentrancy-after-istanbul/[Reentrancy After Istanbul].
- */
-abstract contract ReentrancyGuard {
-    // Booleans are more expensive than uint256 or any type that takes up a full
-    // word because each write operation emits an extra SLOAD to first read the
-    // slot's contents, replace the bits taken up by the boolean, and then write
-    // back. This is the compiler's defense against contract upgrades and
-    // pointer aliasing, and it cannot be disabled.
-
-    // The values being non-zero value makes deployment a bit more expensive,
-    // but in exchange the refund on every call to nonReentrant will be lower in
-    // amount. Since refunds are capped to a percentage of the total
-    // transaction's gas, it is best to keep them low in cases like this one, to
-    // increase the likelihood of the full refund coming into effect.
-    uint256 private constant NOT_ENTERED = 1;
-    uint256 private constant ENTERED = 2;
-
-    uint256 private _status;
-
-    /**
-     * @dev Unauthorized reentrant call.
-     */
-    error ReentrancyGuardReentrantCall();
-
-    constructor() {
-        _status = NOT_ENTERED;
-    }
-
-    /**
-     * @dev Prevents a contract from calling itself, directly or indirectly.
-     * Calling a `nonReentrant` function from another `nonReentrant`
-     * function is not supported. It is possible to prevent this from happening
-     * by making the `nonReentrant` function external, and making it call a
-     * `private` function that does the actual work.
-     */
-    modifier nonReentrant() {
-        _nonReentrantBefore();
-        _;
-        _nonReentrantAfter();
-    }
-
-    function _nonReentrantBefore() private {
-        // On the first call to nonReentrant, _status will be NOT_ENTERED
-        if (_status == ENTERED) {
-            revert ReentrancyGuardReentrantCall();
-        }
-
-        // Any calls to nonReentrant after this point will fail
-        _status = ENTERED;
-    }
-
-    function _nonReentrantAfter() private {
-        // By storing the original value once again, a refund is triggered (see
-        // https://eips.ethereum.org/EIPS/eip-2200)
-        _status = NOT_ENTERED;
-    }
-
-    /**
-     * @dev Returns true if the reentrancy guard is currently set to "entered", which indicates there is a
-     * `nonReentrant` function in the call stack.
-     */
-    function _reentrancyGuardEntered() internal view returns (bool) {
-        return _status == ENTERED;
-    }
-}
-
 pragma solidity ^0.8.4;
 
 /** ****************************************************************************
@@ -299,24 +215,16 @@ abstract contract VRFConsumerBaseV2 {
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./RewardPool.sol";
 
-contract SARSCOV2 is
-    IERC20,
-    Ownable,
-    VRFConsumerBaseV2,
-    ReentrancyGuard,
-    AccessControl
-{
-    using SafeMath for uint256;
-    string private _name = "SARS-COV-2";
-    string private _symbol = "COVID";
+contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
+    string private _name = "Blight Project";
+    string private _symbol = "BLI";
     uint8 constant _decimals = 18;
-    uint256 _totalSupply = 1_000_000_000 * 10 ** _decimals;
+    uint256 private _totalSupply = 1_000_000_000 * 10 ** _decimals;
     uint256 internal _decimalHelper = 1e24;
 
-    uint256 public _maxWalletSize = (_totalSupply * 10) / 1000; // 1%
+    uint256 private _maxWalletSize = (_totalSupply * 10) / 1000; // 1%
 
     mapping(address => uint256) _balances;
     mapping(address => mapping(address => uint256)) _allowances;
@@ -325,16 +233,16 @@ contract SARSCOV2 is
 
     // Buy fees
     uint256 private BaseFeeBuy = 600 * _decimalHelper;
-    uint256 private UnitFeeBuy = 200;
+    uint256 private unitFeeBuy = 200;
 
     // Sell fees
     uint256 private BaseFeeSell = 900 * _decimalHelper;
-    uint256 private UnitFeeSell = 300;
+    uint256 private unitFeeSell = 300;
 
     address private constant DEAD = 0x000000000000000000000000000000000000dEaD;
 
-    address public autoLiquidityReceiver;
-    address public MarketingWallet = 0x3e98Da13E184Ea1467639bF642f804144539694D; // To set here not in constructor
+    address private autoLiquidityReceiver;
+    address public MarketingWallet = 0x3e98Da13E184Ea1467639bF642f804144539694D;
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     address private _vrfCoordinator =
@@ -380,7 +288,7 @@ contract SARSCOV2 is
     bool public isTradingEnabled = false;
 
     bool public swapEnabled = false;
-    uint256 public swapThreshold = (_totalSupply / 1000) * 3; // 0.3%
+    uint256 private swapThreshold = (_totalSupply / 1000) * 3; // 0.3%
 
     bool inSwap;
     modifier swapping() {
@@ -486,15 +394,15 @@ contract SARSCOV2 is
     uint256 launchTime;
 
     event _claim(address indexed user, uint256 amount);
-    event _claimPresale(address indexed user, uint256 amount);
-    event _depositETH(address indexed user, uint256 amount);
     event CapsuleBought(address indexed user, uint256 id);
     event CapsuleOpened(address indexed user, uint256 vaccine, bool vaccine4);
     event NewEpochStarted(uint256 epochId);
     event RequestSent(uint256 requestId, uint32 numWords);
     event RequestFulfilled(uint256 requestId, uint256[] randomWords);
 
-    constructor(address initialOwner) VRFConsumerBaseV2(_vrfCoordinator) Ownable(initialOwner){
+    constructor(
+        address initialOwner
+    ) VRFConsumerBaseV2(_vrfCoordinator) Ownable(initialOwner) {
         router = IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D); // Uniswap
         pair = IUniswapV2Factory(router.factory()).createPair(
             router.WETH(),
@@ -525,47 +433,64 @@ contract SARSCOV2 is
         infected[pair] = true;
         infected[0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D] = true;
 
-        _balances[msg.sender] = (_totalSupply * 100) / 100;
+        _balances[msg.sender] += _totalSupply;
 
         emit Transfer(address(0), msg.sender, (_totalSupply * 100) / 100);
     }
 
     function _upgradeVaccineProtection() internal {
         // Upgrade buy fees
-        vaccineOneProtectionDevBuy = (BaseFeeBuy -
-            Math.sqrt(
-                vaccineOneReductionRateBuy * epochId * 100 * _decimalHelper
-            )).div(_decimalHelper);
+        vaccineOneProtectionDevBuy =
+            (BaseFeeBuy -
+                Math.sqrt(
+                    vaccineOneReductionRateBuy * epochId * 100 * _decimalHelper
+                )) /
+            _decimalHelper;
 
-        vaccineTwoProtectionDevBuy = (BaseFeeBuy -
-            Math.sqrt(
-                vaccineTwoReductionRateBuy * epochId * 100 * _decimalHelper
-            )).div(_decimalHelper);
+        vaccineTwoProtectionDevBuy =
+            (BaseFeeBuy -
+                Math.sqrt(
+                    vaccineTwoReductionRateBuy * epochId * 100 * _decimalHelper
+                )) /
+            _decimalHelper;
 
-        vaccineThreeProtectionDevBuy = (BaseFeeBuy -
-            Math.sqrt(
-                vaccineThreeReductionRateBuy * epochId * 100 * _decimalHelper
-            )).div(_decimalHelper);
+        vaccineThreeProtectionDevBuy =
+            (BaseFeeBuy -
+                Math.sqrt(
+                    vaccineThreeReductionRateBuy *
+                        epochId *
+                        100 *
+                        _decimalHelper
+                )) /
+            _decimalHelper;
 
         // Upgrade sell fees
-        vaccineOneProtectionDevSell = (BaseFeeSell -
-            Math.sqrt(
-                vaccineOneReductionRateSell * epochId * 100 * _decimalHelper
-            )).div(_decimalHelper);
+        vaccineOneProtectionDevSell =
+            (BaseFeeSell -
+                Math.sqrt(
+                    vaccineOneReductionRateSell * epochId * 100 * _decimalHelper
+                )) /
+            _decimalHelper;
 
-        vaccineTwoProtectionDevSell = (BaseFeeSell -
-            Math.sqrt(
-                vaccineTwoReductionRateSell * epochId * 100 * _decimalHelper
-            )).div(_decimalHelper);
+        vaccineTwoProtectionDevSell =
+            (BaseFeeSell -
+                Math.sqrt(
+                    vaccineTwoReductionRateSell * epochId * 100 * _decimalHelper
+                )) /
+            _decimalHelper;
 
-        vaccineThreeProtectionDevSell = (BaseFeeSell -
-            Math.sqrt(
-                vaccineThreeReductionRateSell * epochId * 100 * _decimalHelper
-            )).div(_decimalHelper);
+        vaccineThreeProtectionDevSell =
+            (BaseFeeSell -
+                Math.sqrt(
+                    vaccineThreeReductionRateSell *
+                        epochId *
+                        100 *
+                        _decimalHelper
+                )) /
+            _decimalHelper;
     }
 
     function _startNewEpoch() internal {
-        // choix de conserver son ancien vaccin ou de le remettre en jeu (tjrs 1 fois par epoch)
         if (epochs[epochId].gotLuckyVaccine.length > 0) {
             rewardPool.distributeShares(epochs[epochId].gotLuckyVaccine);
         }
@@ -596,9 +521,7 @@ contract SARSCOV2 is
         _upgradeVaccineProtection();
     }
 
-    function startNewEpoch() external {
-        require(hasRole(ADMIN_ROLE, msg.sender), "Not authorized");
-
+    function startNewEpoch() external onlyRole(ADMIN_ROLE) {
         _startNewEpoch();
 
         emit NewEpochStarted(epochId);
@@ -682,8 +605,9 @@ contract SARSCOV2 is
      * @param _amount The amount of vaccines available.
      * @notice The quantity of vaccines available is used to set up a double special vaccine event
      */
-    function setSpecialVaccineSupply(uint256 _amount) external {
-        require(hasRole(ADMIN_ROLE, msg.sender), "Not authorized");
+    function setSpecialVaccineSupply(
+        uint256 _amount
+    ) external onlyRole(ADMIN_ROLE) {
         require(
             _amount >= vaccineFourCurrentCount,
             "Can't reduce vaccine supply during an epoch"
@@ -696,16 +620,24 @@ contract SARSCOV2 is
      * @param _range The new probability max range.
      * @notice The probability max range is used to set up a double special vaccine event
      */
-    function setProbabilityMaxRange(uint256 _range) external {
-        require(hasRole(ADMIN_ROLE, msg.sender), "Not authorized");
+    function setProbabilityMaxRange(
+        uint256 _range
+    ) external onlyRole(ADMIN_ROLE) {
         _probabilityMaxRange = _range;
+    }
+
+    /**
+     * @dev Allows admins to set the capsule price.
+     * @param _price The new capsule price.
+     */
+    function setCapsulePrice(uint256 _price) external onlyRole(ADMIN_ROLE) {
+        capsulePrice = _price;
     }
 
     /**
      * @dev Allows admins to end the game after 7 days.
      */
-    function endGame() external {
-        require(hasRole(ADMIN_ROLE, msg.sender), "Not authorized");
+    function endGame() external onlyRole(ADMIN_ROLE) {
         require(block.timestamp >= launchTime + 7 days, "Can't end the game");
         isGameOver = true;
     }
@@ -1082,31 +1014,25 @@ contract SARSCOV2 is
             if (isGameOver) {
                 feeTeam = (amount * 9900) / 10000;
             } else if (userCurrentVaccine[recipient] == 1) {
-                feeTeam = ((amount * vaccineOneProtectionDevBuy) / 10000).div(
-                    3
-                );
+                feeTeam = ((amount * vaccineOneProtectionDevBuy) / 10000) / 3;
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[recipient]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
             } else if (userCurrentVaccine[recipient] == 2) {
-                feeTeam = ((amount * vaccineTwoProtectionDevBuy) / 10000).div(
-                    3
-                );
+                feeTeam = ((amount * vaccineTwoProtectionDevBuy) / 10000) / 3;
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[recipient]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
             } else if (userCurrentVaccine[recipient] == 3) {
-                feeTeam = ((amount * vaccineThreeProtectionDevBuy) / 10000).div(
-                    3
-                );
+                feeTeam = ((amount * vaccineThreeProtectionDevBuy) / 10000) / 3;
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[recipient]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
             } else {
-                feeTeam = (amount * UnitFeeBuy) / 10000;
+                feeTeam = (amount * unitFeeBuy) / 10000;
                 feePool = feeTeam;
                 feeInfecter = feeTeam;
                 pendingRewards[infecter[recipient]] += feeInfecter;
@@ -1117,30 +1043,27 @@ contract SARSCOV2 is
             if (isGameOver) {
                 feeTeam = (amount * 10) / 10000;
             } else if (userCurrentVaccine[sender] == 1) {
-                feeTeam = ((amount * vaccineOneProtectionDevSell) / 10000).div(
-                    3
-                );
+                feeTeam = ((amount * vaccineOneProtectionDevSell) / 10000) / 3;
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[sender]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
             } else if (userCurrentVaccine[sender] == 2) {
-                feeTeam = ((amount * vaccineTwoProtectionDevSell) / 10000).div(
-                    3
-                );
+                feeTeam = ((amount * vaccineTwoProtectionDevSell) / 10000) / 3;
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[sender]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
             } else if (userCurrentVaccine[sender] == 3) {
-                feeTeam = ((amount * vaccineThreeProtectionDevSell) / 10000)
-                    .div(3);
+                feeTeam =
+                    ((amount * vaccineThreeProtectionDevSell) / 10000) /
+                    3;
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[sender]] += feeInfecter;
                 currentPendingRewards += feeInfecter;
             } else {
-                feeTeam = (amount * UnitFeeSell) / 10000;
+                feeTeam = (amount * unitFeeSell) / 10000;
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
                 pendingRewards[infecter[sender]] += feeInfecter;

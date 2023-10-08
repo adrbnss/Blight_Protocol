@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract RewardPool is Ownable {
     IERC20 public token;
     address public tokenAddress;
-    uint256 private _maxShares = (token.totalSupply() * 25) / 1000; // 2.5% of total supply
+    uint256 private _maxShares = (1_000_000_000 * 10**18 * 25) / 1000; // 2.5% of total supply
     uint256 public totalDistributed = 0;
 
     constructor(address _token, address initialOwner) Ownable(initialOwner){
