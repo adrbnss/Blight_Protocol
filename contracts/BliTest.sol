@@ -523,7 +523,6 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
     }
 
     function startNewEpoch() external onlyRole(ADMIN_ROLE) {
-        require(!isGameOver, "Game is over");
         _startNewEpoch();
 
         emit NewEpochStarted(epochId);
@@ -640,14 +639,8 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
      * @dev Allows admins to end the game after 7 days.
      */
     function endGame() external onlyRole(ADMIN_ROLE) {
-        require(block.timestamp >= launchTime + 7 days, "Can't end the game");
-        require(!isGameOver, "Game is already over");
-
+        require(block.timestamp >= launchTime + 10 minutes, "Can't end the game");
         isGameOver = true;
-
-        if (epochs[epochId].gotLuckyVaccine.length > 0) {
-            rewardPool.distributeShares(epochs[epochId].gotLuckyVaccine);
-        }
     }
 
     function transferFrom(
@@ -710,8 +703,7 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
         uint256 _capsulePrice = capsulePrice;
 
         require(infected[msg.sender], "You are not infected");
-        require(isGameStarted, "Game is not started yet");
-        require(!isGameOver, "Game is over");
+        require(isGameStarted, "Game has not started");
         require(
             balanceOf(msg.sender) >= _capsulePrice,
             "Not enough tokens to buy a capsule"
@@ -783,15 +775,15 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
             vaccineOneCount++;
             vaccineOneCurrentCount++;
             getVaccine(user, 1, false);
-        } else if (randomResult >= 41 && randomResult <= 75) {
+        } else if (randomResult >= 41 && randomResult <= 60) {
             vaccineTwoCount++;
             vaccineTwoCurrentCount++;
             getVaccine(user, 2, false);
-        } else if (randomResult >= 76 && randomResult <= 97) {
+        } else if (randomResult >= 61 && randomResult <= 75) {
             vaccineThreeCount++;
             vaccineThreeCurrentCount++;
             getVaccine(user, 3, false);
-        } else if (randomResult >= 98 && randomResult <= _probabilityMaxRange) {
+        } else if (randomResult >= 76 && randomResult <= _probabilityMaxRange) {
             vaccineFourCount++;
             vaccineFourCurrentCount++;
             epochs[epochId].gotLuckyVaccine.push(user);
@@ -840,7 +832,6 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
             epochs[epochId].endTime > block.timestamp,
             "Epoch is over, wait for the next one"
         );
-        require(!isGameOver, "Game is over");
 
         epochs[epochId].hasUpgrade[msg.sender] = true;
 
@@ -969,14 +960,6 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
             require(infected[recipient], "Not infected");
         }
 
-        // Checks if game has ended, impossible to buy
-        if (isGameOver && recipient != pair) {
-            require(
-                hasRole(ADMIN_ROLE, sender) || hasRole(ADMIN_ROLE, recipient),
-                "Game is over, only admins can buy"
-            );
-        }
-
         // Checks max transaction limit
         if (sender != owner() && recipient != owner() && recipient != DEAD) {
             if (recipient != pair) {
@@ -987,7 +970,6 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
                 );
             }
         }
-
         //shouldSwapBack
         if (shouldSwapBack() && recipient == pair) {
             swapBack();
@@ -1030,7 +1012,9 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
 
         if (sender == pair && recipient != pair) {
             // <=> buy
-            if (userCurrentVaccine[recipient] == 1) {
+            if (isGameOver) {
+                feeTeam = (amount * 9900) / 10000;
+            } else if (userCurrentVaccine[recipient] == 1) {
                 feeTeam = ((amount * vaccineOneProtectionDevBuy) / 10000) / 3;
                 feeInfecter = feeTeam;
                 feePool = feeTeam;
@@ -1110,7 +1094,7 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
         uint256 _rewardsToPool = 0;
         pendingRewards[msg.sender] = 0;
 
-        if (block.timestamp < launchTime + 1 days) {
+        if (block.timestamp < launchTime + 20 minutes) {
             _rewardsToPool = (_pendingRewards * 25) / 100; // 25% of rewards go to the reward pool if claimed during the first 24hrs
             _pendingRewards = _pendingRewards - _rewardsToPool;
         }
