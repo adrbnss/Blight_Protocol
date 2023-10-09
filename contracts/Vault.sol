@@ -5,7 +5,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract RewardPool is Ownable {
+contract Vault is Ownable {
     IERC20 public token;
     address public tokenAddress;
     uint256 private _maxShares = (1_000_000_000 * 10**18 * 25) / 1000; // 2.5% of total supply

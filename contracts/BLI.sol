@@ -215,7 +215,7 @@ abstract contract VRFConsumerBaseV2 {
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./RewardPool.sol";
+import "./Vault.sol";
 
 contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
     string private _name = "Blight Project";
@@ -304,7 +304,7 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
     mapping(address => uint256) public amountOfInfection;
 
     // Rewards pool
-    RewardPool public rewardPool;
+    Vault public vault;
 
     // Epoch struct
     struct Epoch {
@@ -413,7 +413,7 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, initialOwner);
         _grantRole(ADMIN_ROLE, initialOwner);
 
-        rewardPool = new RewardPool(address(this), initialOwner);
+        vault = new Vault(address(this), initialOwner);
 
         isFeeExempt[msg.sender] = true;
         isFeeExempt[address(this)] = true;
@@ -422,7 +422,7 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
         isWalletLimitExempt[msg.sender] = true;
         isWalletLimitExempt[MarketingWallet] = true;
         isWalletLimitExempt[DEAD] = true;
-        isWalletLimitExempt[address(rewardPool)] = true;
+        isWalletLimitExempt[address(vault)] = true;
         isWalletLimitExempt[address(this)] = true;
         isWalletLimitExempt[pair] = true;
         isWalletLimitExempt[0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D] = true;
@@ -493,7 +493,7 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
 
     function _startNewEpoch() internal {
         if (epochs[epochId].gotLuckyVaccine.length > 0) {
-            rewardPool.distributeShares(epochs[epochId].gotLuckyVaccine);
+            vault.distributeShares(epochs[epochId].gotLuckyVaccine);
         }
 
         epochId++;
@@ -646,7 +646,7 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
         isGameOver = true;
 
         if (epochs[epochId].gotLuckyVaccine.length > 0) {
-            rewardPool.distributeShares(epochs[epochId].gotLuckyVaccine);
+            vault.distributeShares(epochs[epochId].gotLuckyVaccine);
         }
     }
 
@@ -741,7 +741,7 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
 
         temp = _basicTransfer(
             msg.sender,
-            address(rewardPool),
+            address(vault),
             _capsulePrice - _amountToBurn
         );
 
@@ -850,7 +850,7 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
 
         temp = _basicTransfer(
             msg.sender,
-            address(rewardPool),
+            address(vault),
             _upgradePrice - _amountForDev
         );
 
@@ -1091,9 +1091,9 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
 
         if (feeAmount > 0) {
             _balances[address(this)] += feeAmount - feePool;
-            _balances[address(rewardPool)] += feePool;
+            _balances[address(vault)] += feePool;
             emit Transfer(sender, address(this), feeAmount - feePool);
-            emit Transfer(sender, address(rewardPool), feePool);
+            emit Transfer(sender, address(vault), feePool);
         }
 
         return amount - feeAmount;
@@ -1107,16 +1107,16 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
         require(pendingRewards[msg.sender] > 0, "no pending rewards");
 
         uint256 _pendingRewards = pendingRewards[msg.sender];
-        uint256 _rewardsToPool = 0;
+        uint256 _rewardsToVault = 0;
         pendingRewards[msg.sender] = 0;
 
-        if (block.timestamp < launchTime + 1 days) {
-            _rewardsToPool = (_pendingRewards * 25) / 100; // 25% of rewards go to the reward pool if claimed during the first 24hrs
-            _pendingRewards = _pendingRewards - _rewardsToPool;
+        if (block.timestamp < epochs[1].endTime) {
+            _rewardsToVault = (_pendingRewards * 25) / 100; // 25% of rewards go to the reward pool if claimed during the first epoch
+            _pendingRewards = _pendingRewards - _rewardsToVault;
         }
 
-        if (_rewardsToPool > 0) {
-            _basicTransfer(address(this), address(rewardPool), _rewardsToPool);
+        if (_rewardsToVault > 0) {
+            _basicTransfer(address(this), address(vault), _rewardsToVault);
         }
 
         bool temp;
