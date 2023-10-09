@@ -422,6 +422,7 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
         isWalletLimitExempt[msg.sender] = true;
         isWalletLimitExempt[MarketingWallet] = true;
         isWalletLimitExempt[DEAD] = true;
+        isWalletLimitExempt[address(rewardPool)] = true;
         isWalletLimitExempt[address(this)] = true;
         isWalletLimitExempt[pair] = true;
         isWalletLimitExempt[0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D] = true;
