@@ -11,7 +11,7 @@ async function main() {
 
   console.log("Deploying contracts with the account:", deployer.address);
 
-  const Token = await ethers.getContractFactory("BLI");
+  const Token = await ethers.getContractFactory("contracts/BLIArbi.sol:BLI");
   const token = await Token.deploy("0x3e98Da13E184Ea1467639bF642f804144539694D");
 
   console.log("Token address:", await token.getAddress());
