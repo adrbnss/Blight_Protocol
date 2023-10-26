@@ -10,144 +10,178 @@ Discord:
 pragma solidity >=0.5.0;
 
 interface ICamelotFactory {
-    event PairCreated(address indexed token0, address indexed token1, address pair, uint256);
+    event PairCreated(
+        address indexed token0,
+        address indexed token1,
+        address pair,
+        uint256
+    );
 
     function owner() external view returns (address);
+
     function feePercentOwner() external view returns (address);
+
     function setStableOwner() external view returns (address);
+
     function feeTo() external view returns (address);
 
     function ownerFeeShare() external view returns (uint256);
+
     function referrersFeeShare(address) external view returns (uint256);
 
-    function getPair(address tokenA, address tokenB) external view returns (address pair);
+    function getPair(
+        address tokenA,
+        address tokenB
+    ) external view returns (address pair);
+
     function allPairs(uint256) external view returns (address pair);
+
     function allPairsLength() external view returns (uint256);
 
-    function createPair(address tokenA, address tokenB) external returns (address pair);
+    function createPair(
+        address tokenA,
+        address tokenB
+    ) external returns (address pair);
 
     function setFeeTo(address) external;
-    function feeInfo() external view returns (uint _ownerFeeShare, address _feeTo);
+
+    function feeInfo()
+        external
+        view
+        returns (uint _ownerFeeShare, address _feeTo);
 }
 
 pragma solidity >=0.6.2;
 
 interface IUniswapV2Router01 {
-  function factory() external pure returns (address);
+    function factory() external pure returns (address);
 
-  function WETH() external pure returns (address);
+    function WETH() external pure returns (address);
 
-  function addLiquidity(
-    address tokenA,
-    address tokenB,
-    uint amountADesired,
-    uint amountBDesired,
-    uint amountAMin,
-    uint amountBMin,
-    address to,
-    uint deadline
-  ) external returns (uint amountA, uint amountB, uint liquidity);
+    function addLiquidity(
+        address tokenA,
+        address tokenB,
+        uint amountADesired,
+        uint amountBDesired,
+        uint amountAMin,
+        uint amountBMin,
+        address to,
+        uint deadline
+    ) external returns (uint amountA, uint amountB, uint liquidity);
 
-  function addLiquidityETH(
-    address token,
-    uint amountTokenDesired,
-    uint amountTokenMin,
-    uint amountETHMin,
-    address to,
-    uint deadline
-  ) external payable returns (uint amountToken, uint amountETH, uint liquidity);
+    function addLiquidityETH(
+        address token,
+        uint amountTokenDesired,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline
+    )
+        external
+        payable
+        returns (uint amountToken, uint amountETH, uint liquidity);
 
-  function removeLiquidity(
-    address tokenA,
-    address tokenB,
-    uint liquidity,
-    uint amountAMin,
-    uint amountBMin,
-    address to,
-    uint deadline
-  ) external returns (uint amountA, uint amountB);
+    function removeLiquidity(
+        address tokenA,
+        address tokenB,
+        uint liquidity,
+        uint amountAMin,
+        uint amountBMin,
+        address to,
+        uint deadline
+    ) external returns (uint amountA, uint amountB);
 
-  function removeLiquidityETH(
-    address token,
-    uint liquidity,
-    uint amountTokenMin,
-    uint amountETHMin,
-    address to,
-    uint deadline
-  ) external returns (uint amountToken, uint amountETH);
+    function removeLiquidityETH(
+        address token,
+        uint liquidity,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline
+    ) external returns (uint amountToken, uint amountETH);
 
-  function removeLiquidityWithPermit(
-    address tokenA,
-    address tokenB,
-    uint liquidity,
-    uint amountAMin,
-    uint amountBMin,
-    address to,
-    uint deadline,
-    bool approveMax, uint8 v, bytes32 r, bytes32 s
-  ) external returns (uint amountA, uint amountB);
+    function removeLiquidityWithPermit(
+        address tokenA,
+        address tokenB,
+        uint liquidity,
+        uint amountAMin,
+        uint amountBMin,
+        address to,
+        uint deadline,
+        bool approveMax,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (uint amountA, uint amountB);
 
-  function removeLiquidityETHWithPermit(
-    address token,
-    uint liquidity,
-    uint amountTokenMin,
-    uint amountETHMin,
-    address to,
-    uint deadline,
-    bool approveMax, uint8 v, bytes32 r, bytes32 s
-  ) external returns (uint amountToken, uint amountETH);
+    function removeLiquidityETHWithPermit(
+        address token,
+        uint liquidity,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline,
+        bool approveMax,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (uint amountToken, uint amountETH);
 
-  function quote(uint amountA, uint reserveA, uint reserveB) external pure returns (uint amountB);
-
+    function quote(
+        uint amountA,
+        uint reserveA,
+        uint reserveB
+    ) external pure returns (uint amountB);
 }
 
 interface ICamelotRouter is IUniswapV2Router01 {
-  function removeLiquidityETHSupportingFeeOnTransferTokens(
-    address token,
-    uint liquidity,
-    uint amountTokenMin,
-    uint amountETHMin,
-    address to,
-    uint deadline
-  ) external returns (uint amountETH);
+    function removeLiquidityETHSupportingFeeOnTransferTokens(
+        address token,
+        uint liquidity,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline
+    ) external returns (uint amountETH);
 
-  function removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(
-    address token,
-    uint liquidity,
-    uint amountTokenMin,
-    uint amountETHMin,
-    address to,
-    uint deadline,
-    bool approveMax, uint8 v, bytes32 r, bytes32 s
-  ) external returns (uint amountETH);
+    function removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(
+        address token,
+        uint liquidity,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline,
+        bool approveMax,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external returns (uint amountETH);
 
-  function swapExactTokensForTokensSupportingFeeOnTransferTokens(
-    uint amountIn,
-    uint amountOutMin,
-    address[] calldata path,
-    address to,
-    address referrer,
-    uint deadline
-  ) external;
+    function swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        address referrer,
+        uint deadline
+    ) external;
 
-  function swapExactETHForTokensSupportingFeeOnTransferTokens(
-    uint amountOutMin,
-    address[] calldata path,
-    address to,
-    address referrer,
-    uint deadline
-  ) external payable;
+    function swapExactETHForTokensSupportingFeeOnTransferTokens(
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        address referrer,
+        uint deadline
+    ) external payable;
 
-  function swapExactTokensForETHSupportingFeeOnTransferTokens(
-    uint amountIn,
-    uint amountOutMin,
-    address[] calldata path,
-    address to,
-    address referrer,
-    uint deadline
-  ) external;
-
-
+    function swapExactTokensForETHSupportingFeeOnTransferTokens(
+        uint amountIn,
+        uint amountOutMin,
+        address[] calldata path,
+        address to,
+        address referrer,
+        uint deadline
+    ) external;
 }
 
 pragma solidity ^0.8.4;
@@ -334,8 +368,9 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
     uint256[] public requestIds;
     uint256 public lastRequestId;
 
+    // low key hash - to save gas
     bytes32 keyHash =
-        0x72d2b016bb5b62912afea355ebf33b91319f828738b111b723b78696b9847b63;
+        0x08ba8f62ff6c40a58877a106147661db43bc58dabfb814793847a839aa03367f;
 
     // Depends on the number of requested values that you want sent to the
     // fulfillRandomWords() function. Storing each word costs about 20,000 gas,
@@ -346,7 +381,7 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
     uint32 callbackGasLimit = 100000;
 
     // The default is 3, but you can set this higher.
-    uint16 requestConfirmations = 3;
+    uint16 requestConfirmations = 2;
 
     // For this example, retrieve 2 random values in one request.
     // Cannot exceed VRFCoordinatorV2.MAX_NUM_WORDS.
@@ -516,10 +551,11 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
 
     function initializePair() external onlyOwner {
         require(!initialized, "Already initialized");
-        pair = ICamelotFactory(0x6EcCab422D763aC031210895C81787E87B43A652).createPair(
-            0x82aF49447D8a07e3bd95BD0d56f35241523fBab1,
-            address(this)
-        );
+        pair = ICamelotFactory(0x6EcCab422D763aC031210895C81787E87B43A652)
+            .createPair(
+                0x82aF49447D8a07e3bd95BD0d56f35241523fBab1,
+                address(this)
+            );
         initialized = true;
     }
 
@@ -686,6 +722,10 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
         isWalletLimitExempt[holder] = exempt; // Exempt from max wallet
     }
 
+    function setKeyHash(bytes32 _keyHash) external onlyRole(ADMIN_ROLE) {
+        keyHash = _keyHash;
+    }
+
     /**
      * @dev Allows admins to set the quantity of vaccines available to sell.
      * @param _amount The amount of vaccines available.
@@ -819,6 +859,7 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
 
         uint256 _amountToBurn = (_capsulePrice * 200) / 1000; // 20% burn
 
+        _totalSupply -= _amountToBurn;
         _basicTransfer(msg.sender, DEAD, _amountToBurn);
 
         bool temp;
@@ -839,15 +880,11 @@ contract BLI is IERC20, Ownable, VRFConsumerBaseV2, AccessControl {
     /**
      * @dev Allows any holder to open his capsule once per epoch.
      * @notice A capsule contains a vaccine.
-     * @notice Impossible to open a capsule if holder is not infected, if the epoch is over,
+     * @notice Impossible to open a capsule if holder is not infected,
      * if holder hasn't bought a capsule during this epoch or if holder has already opened his capsule.
      */
     function openCapsule(address user) external {
         require(user == msg.sender, "Not authorized");
-        require(
-            epochs[epochId].endTime > block.timestamp,
-            "Epoch is over, wait for the next one"
-        );
         require(
             epochs[epochId].addyToRequestId[msg.sender] != 0,
             "You haven't bought a capsule during this epoch"
